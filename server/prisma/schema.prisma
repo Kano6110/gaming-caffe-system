@@ -12,15 +12,44 @@ datasource db {
   provider = "postgresql"
 }
 
-model User{
-  id String @id @default(uuid())
-  username String @unique
-  passwordHash String
-  role Role @default(USER)
-  balance Int @default(0)
-  createdAt DateTime @default(now())
-}
 enum Role{
   USER
   ADMIN
 } 
+model User {
+  id           String    @id @default(uuid())
+  username     String    @unique
+  passwordHash String    // never expose this field via Prisma `select`
+  role         Role      @default(USER)
+  playtimeSecs Int       @default(0) // remaining playtime, in seconds
+  isActive     Boolean   @default(true) // admin can disable an account
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  sessions     Session[]
+
+  @@map("users")
+}
+
+
+model Session {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id])
+
+  computerId   String?   // nullable: admins logging into the dashboard
+                         // aren't tied to a gaming-café computer
+  // computer     Computer? @relation(fields: [computerId], references: [id])
+
+  token        String    @unique // random opaque string, NOT the JWT itself
+                                  // (JWT signs over this, see jwt.ts)
+  isRevoked    Boolean   @default(false)
+  expiresAt    DateTime
+  createdAt    DateTime  @default(now())
+  revokedAt    DateTime?
+  revokedReason String?  // e.g. "time_expired", "admin_force_logout", "logout"
+
+  @@index([userId])
+  @@index([token])
+  @@map("sessions")
+}
