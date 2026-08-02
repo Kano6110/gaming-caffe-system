@@ -33,23 +33,45 @@ model User {
 
 
 model Session {
-  id           String    @id @default(uuid())
-  userId       String
-  user         User      @relation(fields: [userId], references: [id])
+  id            String    @id @default(uuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
 
-  computerId   String?   // nullable: admins logging into the dashboard
-                         // aren't tied to a gaming-café computer
-  // computer     Computer? @relation(fields: [computerId], references: [id])
+  computerId    String?
+  computer      Computer? @relation(fields: [computerId], references: [id], onDelete: SetNull)
 
-  token        String    @unique // random opaque string, NOT the JWT itself
-                                  // (JWT signs over this, see jwt.ts)
-  isRevoked    Boolean   @default(false)
-  expiresAt    DateTime
-  createdAt    DateTime  @default(now())
-  revokedAt    DateTime?
-  revokedReason String?  // e.g. "time_expired", "admin_force_logout", "logout"
+  token         String    @unique
+  isRevoked     Boolean   @default(false)
+  expiresAt     DateTime
+  createdAt     DateTime  @default(now())
+  revokedAt     DateTime?
+  revokedReason String?
 
   @@index([userId])
+  @@index([computerId])
   @@index([token])
   @@map("sessions")
+}
+
+enum ComputerMode {
+  AVAILABLE
+  MAINTENANCE
+  DISABLED
+}
+
+model Computer {
+  id            String    @id @default(uuid())
+  machineId     String    @unique // generated + persisted by the Launcher; identity anchor
+  name          String    // admin-owned; set at creation, renamed only via PATCH by staff
+  ipAddress     String    // launcher-owned; refreshed on every register/heartbeat
+  mode          ComputerMode @default(AVAILABLE) // admin-set operational state
+
+  lastHeartbeat DateTime? // null until first heartbeat; online/offline is DERIVED from this, never stored
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sessions      Session[] // history of all sessions run on this machine
+
+  @@map("computers")
 }

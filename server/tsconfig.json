@@ -1,9 +1,18 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "strict": true
+  }
+}
 // {
 //   // Visit https://aka.ms/tsconfig to read more about this file
 //   "compilerOptions": {
 //     // File Layout
-//      "rootDir": "./src",
-//     "outDir": "./dist",
+    //  "rootDir": "./src",
+    // "outDir": "./dist",
 
 //     // Environment Settings
 //     // See also https://aka.ms/tsconfig/module
@@ -42,12 +51,3 @@
 //     "skipLibCheck": true,
 //   }
 // }
-{
-  "compilerOptions": {
-    "target": "ES2022",
-    "module": "CommonJS",
-    "rootDir": "./src",
-    "outDir": "./dist",
-    "strict": true
-  }
-}

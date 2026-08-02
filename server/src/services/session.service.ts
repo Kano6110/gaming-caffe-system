@@ -1,7 +1,7 @@
 import { prisma } from "../lib/prisma";
 import crypto from "crypto";
 
-const SESSION_TTL_MS = 1000 * 60 * 60 * 12; // 12h absolute session lifetime
+const SESSION_TTL_MS = 1000 * 60 * 60 * 24;; // 24h absolute session lifetime
 
 /**
  * Creates a new session for a user, revoking any existing active session

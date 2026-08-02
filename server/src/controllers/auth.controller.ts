@@ -6,7 +6,7 @@ import { revokeSession } from "../services/session.service";
 const registerSchema = z.object({
   username: z.string().min(3).max(32),
   password: z.string().min(8),
-  role: z.enum(["ADMIN",  "USER"]).optional(),
+  role: z.enum(["ADMIN","USER"]).optional(),
 });
 
 const loginSchema = z.object({
