@@ -43,7 +43,7 @@ export async function requireAuth(
 }
 
 /** Role gate — use after requireAuth, e.g. requireRole("ADMIN") */
-export function requireRole(...allowed: Array<"ADMIN" | "USER">) {
+export function requireRole(...allowed: Array<"ADMIN" | "STAFF" | "USER">) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user || !allowed.includes(req.user.role)) {
       return res.status(403).json({ error: "Insufficient permissions" });

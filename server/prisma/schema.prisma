@@ -5,7 +5,7 @@
 
 generator client {
   provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  output   = "../src/generated/prisma/client"
 }
 
 datasource db {
@@ -15,7 +15,14 @@ datasource db {
 enum Role{
   USER
   ADMIN
+  STAFF
 } 
+enum SessionEndReason {
+  LOGGED_OUT              // user ended it themselves — remaining playtime preserved
+  TIME_EXPIRED             // playtime hit zero — caught by the sweep job
+  ADMIN_ENDED               // staff force-ended it
+  SUPERSEDED_BY_NEW_LOGIN   // user logged in elsewhere, this session was replaced
+}
 model User {
   id           String    @id @default(uuid())
   username     String    @unique
@@ -41,15 +48,19 @@ model Session {
   computer      Computer? @relation(fields: [computerId], references: [id], onDelete: SetNull)
 
   token         String    @unique
-  isRevoked     Boolean   @default(false)
-  expiresAt     DateTime
+
+  startedAt     DateTime  @default(now()) // renamed conceptually from createdAt — this IS session start
+  expiresAt     DateTime  // absolute hard cap (24h) — a safety net, separate from playtime billing
+  endedAt       DateTime? // null = still active. Single source of truth, replaces isRevoked+revokedAt.
+  endReason     SessionEndReason?
+
   createdAt     DateTime  @default(now())
-  revokedAt     DateTime?
-  revokedReason String?
+  updatedAt     DateTime  @updatedAt
 
   @@index([userId])
   @@index([computerId])
   @@index([token])
+  @@index([endedAt]) // the sweep job filters WHERE endedAt IS NULL constantly — index it
   @@map("sessions")
 }
 

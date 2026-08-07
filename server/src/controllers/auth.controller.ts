@@ -1,12 +1,12 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import { registerUser, login, AuthError } from "../services/auth.service";
-import { revokeSession } from "../services/session.service";
+import { endSession } from "../services/session.service";
 
 const registerSchema = z.object({
   username: z.string().min(3).max(32),
   password: z.string().min(8),
-  role: z.enum(["ADMIN","USER"]).optional(),
+  role: z.enum(["ADMIN", "STAFF", "USER"]).optional(),
 });
 
 const loginSchema = z.object({
@@ -64,6 +64,9 @@ export async function logoutHandler(req: Request, res: Response) {
   if (!req.user) {
     return res.status(401).json({ error: "Not authenticated" });
   }
-  await revokeSession(req.user.sessionId, "logout");
+  // endSession also deducts actual elapsed playtime from the user's
+  // balance — logout isn't just an auth action anymore, it's the billing
+  // checkpoint for this session, per our session-management design.
+  await endSession(req.user.sessionId, "LOGGED_OUT");
   return res.status(200).json({ message: "Logged out" });
 }

@@ -22,7 +22,7 @@ export class AuthError extends Error {
 }
 
 /**
- * Admin-only: creates a customer or staff account.
+ * Admin/staff only: creates a customer (USER) or staff/admin account.
  * (Enforce the "who's allowed to call this" check in the controller/route,
  * not here — this service just does the work.)
  */
@@ -70,13 +70,31 @@ export async function login(
   const passwordMatches = await verifyPassword(plainPassword, user.passwordHash);
   if (!passwordMatches) throw new AuthError("Invalid username or password");
 
+  // A USER (customer) session with no computer breaks our own rule that
+  // "the session must connect the user with the computer" — it would bill
+  // playtime against a session no dashboard view could ever locate. An
+  // ADMIN/STAFF logging into the browser dashboard is the opposite case:
+  // they're never occupying a café PC, so computerId must NOT be sent.
+  if (user.role === "USER" && !computerId) {
+    throw new AuthError("A computerId is required to start a play session", 400);
+  }
+  if (user.role !== "USER" && computerId) {
+    throw new AuthError("Admin/staff accounts do not log in from a computer", 400);
+  }
+
   if (computerId) {
     const computerOccupied = await prisma.session.findFirst({
-      where: { computerId, isRevoked: false, expiresAt: { gt: new Date() } },
+      where: { computerId, endedAt: null, expiresAt: { gt: new Date() } },
     });
     if (computerOccupied) {
       throw new AuthError("This computer is already in use", 409);
     }
+  }
+
+  // ADMIN/STAFF have no playtime concept and must always be able to log in
+  // regardless of their (irrelevant, always-0) playtimeSecs value.
+  if (user.role === "USER" && user.playtimeSecs <= 0) {
+    throw new AuthError("No playtime remaining. Please recharge to continue.", 402);
   }
 
   const session = await createSession(user.id, computerId);

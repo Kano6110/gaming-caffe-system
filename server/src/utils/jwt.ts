@@ -6,13 +6,21 @@ if (!JWT_SECRET) {
   throw new Error("JWT_SECRET is not set in environment variables");
 }
 
-
+// Short-lived on purpose: the JWT is a cache of "this session was valid
+// as of N minutes ago", not the ultimate source of truth. The Session
+// table in Postgres is the source of truth.
+//
+// Cast to SignOptions["expiresIn"] because @types/jsonwebtoken types this
+// as a branded `StringValue` (e.g. "15m", "1h"), not a plain `string` —
+// process.env values are always typed `string`, so TS can't verify the
+// format at compile time. Just make sure JWT_ACCESS_TTL is a valid
+// "ms"-style string like "15m", "1h", "7d", or a number of seconds.
 const ACCESS_TOKEN_TTL = (process.env.JWT_ACCESS_TTL ??
   "15m") as SignOptions["expiresIn"];
 
 export interface AccessTokenPayload {
   userId: string;
-  role: "ADMIN" | "USER" ;
+  role: "ADMIN" | "STAFF" | "USER";
   sessionId: string;
 }
 
